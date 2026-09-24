@@ -1,0 +1,59 @@
+# Copy to $HERMES_HOME/worker-runtime.yaml (default ~/.hermes/worker-runtime.yaml).
+# Anything unknown or malformed is a hard error: the daemon refuses to start
+# rather than guess. Only assignees listed here are ever claimed.
+
+boards: all                      # or a list of board slugs: [default, infra]
+poll_interval_seconds: 5
+heartbeat_interval_seconds: 30   # claim heartbeat (ownership check)
+# claim_ttl_seconds: 900         # default: Hermes' own claim TTL
+
+lanes:
+  # Deterministic command lane. argv only — card text never reaches it.
+  tests:
+    assignee: wr:tests
+    adapter: command
+    command: ["uv", "run", "pytest", "-q"]
+    concurrency: 2
+    timeout_seconds: 1800
+    on_success: complete         # complete | review
+    on_failure: block            # block (needs_input) | fail (Hermes retry budget)
+    env:
+      pass: [UV_CACHE_DIR]
+
+  # Codex via its ACP adapter (pinned preset). Needs `codex login` or OPENAI_API_KEY.
+  codex:
+    assignee: wr:codex
+    adapter: acp
+    agent: codex
+    concurrency: 1
+    timeout_seconds: 3600
+    on_success: review           # a human (or reviewer profile) signs off
+    on_failure: fail
+    reviewer: reviewer           # optional Hermes profile to hand review to
+    permission_policy: allow     # answer the agent's tool-permission prompts
+    env:
+      pass: [OPENAI_API_KEY, CODEX_HOME]
+    instructions: |
+      Keep the change minimal. Run the project's tests before you finish.
+
+  # Claude Code via the ACP adapter. Uses the local `claude` login or ANTHROPIC_API_KEY.
+  claude:
+    assignee: wr:claude
+    adapter: acp
+    agent: claude
+    env:
+      pass: [ANTHROPIC_API_KEY, CLAUDE_CONFIG_DIR]
+
+  # OpenCode speaks ACP natively.
+  opencode:
+    assignee: wr:opencode
+    adapter: acp
+    agent: opencode
+    env:
+      pass: [XDG_CONFIG_HOME, XDG_DATA_HOME]
+
+  # Any other ACP agent: give the argv explicitly.
+  # custom:
+  #   assignee: wr:custom
+  #   adapter: acp
+  #   agent_command: ["my-agent", "--acp"]

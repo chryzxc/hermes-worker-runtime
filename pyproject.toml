@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hermes-worker-runtime"
+version = "0.1.0"
+description = "External worker lanes (Codex, Claude Code, OpenCode, commands) for Hermes Kanban."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+  {name = "Christian Rey Villablanca"},
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+# Hermes itself (hermes_cli) is provided by the host install, not declared here.
+dependencies = [
+  "PyYAML>=6",
+  "agent-client-protocol>=0.9,<0.10",
+]
+
+[project.scripts]
+hermes-worker-runtime = "hermes_worker_runtime.cli:main"
+
+[dependency-groups]
+dev = [
+  "pytest>=8,<9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["hermes_worker_runtime"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+pythonpath = ["."]

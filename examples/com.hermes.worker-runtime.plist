@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- launchd agent: cp to ~/Library/LaunchAgents/, replace YOU, then
+     launchctl load ~/Library/LaunchAgents/com.hermes.worker-runtime.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.hermes.worker-runtime</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/YOU/.hermes/hermes-agent/venv/bin/hermes</string>
+    <string>worker-runtime</string>
+    <string>run</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>StandardOutPath</key><string>/Users/YOU/.hermes/worker-runtime/daemon.log</string>
+  <key>StandardErrorPath</key><string>/Users/YOU/.hermes/worker-runtime/daemon.log</string>
+</dict>
+</plist>
