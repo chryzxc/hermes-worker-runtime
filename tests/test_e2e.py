@@ -10,6 +10,8 @@ from pathlib import Path
 
 import pytest
 
+pytest.importorskip("hermes_cli.kanban_db", reason="needs a Hermes Agent checkout")
+
 from hermes_worker_runtime import hermes_api as h, paths
 from hermes_worker_runtime.config import parse_config
 from hermes_worker_runtime.scheduler import DaemonLockError, Scheduler, daemon_lock

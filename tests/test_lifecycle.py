@@ -2,6 +2,8 @@
 
 import pytest
 
+pytest.importorskip("hermes_cli.kanban_db", reason="needs a Hermes Agent checkout")
+
 from hermes_worker_runtime import hermes_api as h, lifecycle
 from hermes_worker_runtime.config import parse_config
 from hermes_worker_runtime.result import Status, WorkerResult

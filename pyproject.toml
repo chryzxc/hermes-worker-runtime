@@ -7,21 +7,36 @@ name = "hermes-worker-runtime"
 version = "0.1.0"
 description = "External worker lanes (Codex, Claude Code, OpenCode, commands) for Hermes Kanban."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license = {text = "MIT"}
 authors = [
   {name = "Christian Rey Villablanca"},
 ]
+keywords = ["hermes-agent", "kanban", "acp", "agent-client-protocol", "codex", "claude-code",
+            "opencode", "coding-agents", "workers"]
 classifiers = [
   "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
   "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development",
 ]
 # Hermes itself (hermes_cli) is provided by the host install, not declared here.
 dependencies = [
   "PyYAML>=6",
   "agent-client-protocol>=0.9,<0.10",
 ]
+
+[project.urls]
+Homepage = "https://github.com/chryzxc/hermes-worker-runtime"
+Changelog = "https://github.com/chryzxc/hermes-worker-runtime/blob/main/CHANGELOG.md"
+Issues = "https://github.com/chryzxc/hermes-worker-runtime/issues"
 
 [project.scripts]
 hermes-worker-runtime = "hermes_worker_runtime.cli:main"

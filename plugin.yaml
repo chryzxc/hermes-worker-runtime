@@ -2,7 +2,16 @@ name: worker-runtime
 version: 0.1.0
 manifest_version: 2
 api_version: 1
+label: Worker Runtime
 description: External worker lanes for Hermes Kanban — claim wr:* cards and run them with ACP coding agents (Codex, Claude Code, OpenCode) or deterministic commands, with Hermes as lifecycle authority.
+author: Christian Rey Villablanca
 license: MIT
 homepage: https://github.com/chryzxc/hermes-worker-runtime
+requires_hermes: ">=0.21.4"
+platforms:
+  - linux
+  - macos
+python_dependencies:
+  - PyYAML>=6
+  - agent-client-protocol>=0.9,<0.10
 tags: [kanban, workers, acp, codex, claude-code, opencode, automation]

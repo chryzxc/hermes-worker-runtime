@@ -1,6 +1,12 @@
+import importlib.util
 import json
 
+import pytest
+
 from hermes_worker_runtime import cli
+
+needs_hermes = pytest.mark.skipif(importlib.util.find_spec("hermes_cli") is None,
+                                  reason="needs a Hermes Agent checkout")
 
 
 def write(home, text):
@@ -15,6 +21,7 @@ def test_config_error_exits_2(hermes_home, capsys):
     assert "config error" in capsys.readouterr().err
 
 
+@needs_hermes
 def test_lanes_and_doctor(hermes_home, capsys):
     write(hermes_home, "lanes:\n  tests:\n    assignee: wr:tests\n    adapter: command\n"
                        "    command: [\"true\"]\n  ghost:\n    assignee: wr:ghost\n"

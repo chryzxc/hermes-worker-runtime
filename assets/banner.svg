@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-label="Hermes Worker Runtime">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" rx="12" fill="url(#bg)"/>
+  <text x="60" y="86" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="40" font-weight="700" fill="#f0f6fc">Hermes Worker Runtime</text>
+  <text x="60" y="130" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="20" fill="#8b949e">Run Hermes Kanban cards on Codex, Claude Code, OpenCode, or plain commands.</text>
+  <g font-family="SF Mono,Menlo,Consolas,monospace" font-size="17" font-weight="600">
+    <rect x="60" y="178" width="150" height="44" rx="22" fill="#1f6feb" opacity="0.25"/>
+    <text x="135" y="206" fill="#79c0ff" text-anchor="middle">wr:* card</text>
+    <text x="222" y="206" fill="#484f58">→</text>
+    <rect x="244" y="178" width="100" height="44" rx="22" fill="#1f6feb" opacity="0.25"/>
+    <text x="294" y="206" fill="#79c0ff" text-anchor="middle">claim</text>
+    <text x="356" y="206" fill="#484f58">→</text>
+    <rect x="378" y="178" width="150" height="44" rx="22" fill="#8957e5" opacity="0.3"/>
+    <text x="453" y="206" fill="#d2a8ff" text-anchor="middle">supervisor</text>
+    <text x="540" y="206" fill="#484f58">→</text>
+    <rect x="562" y="178" width="250" height="44" rx="22" fill="#238636" opacity="0.3"/>
+    <text x="687" y="206" fill="#7ee787" text-anchor="middle">ACP agent · command</text>
+    <text x="824" y="206" fill="#484f58">→</text>
+    <rect x="846" y="178" width="290" height="44" rx="22" fill="#da3633" opacity="0.3"/>
+    <text x="991" y="206" fill="#ffa198" text-anchor="middle">done · review · blocked</text>
+  </g>
+  <text x="60" y="266" font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="15" fill="#6e7681">Hermes stays the lifecycle authority · fail-closed lanes · ownership-fenced writes · whole-tree cancellation</text>
+</svg>

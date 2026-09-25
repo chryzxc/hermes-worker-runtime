@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+env:
+  # Hermes Agent commit the integration suite is validated against (0.21.4).
+  HERMES_REF: 439eb0395eed5025139ee917526f31e2d161699e
+
+jobs:
+  unit:
+    name: unit (py${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+          activate-environment: true
+      - name: Unit tests (no Hermes)
+        env:
+          HERMES_AGENT_ROOT: /nonexistent
+        run: |
+          uv pip install pytest pyyaml 'agent-client-protocol>=0.9,<0.10'
+          python -m pytest -q
+
+  integration:
+    name: integration (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check out Hermes Agent
+        uses: actions/checkout@v4
+        with:
+          repository: NousResearch/hermes-agent
+          ref: ${{ env.HERMES_REF }}
+          path: .hermes-agent
+          fetch-depth: 1
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.11"
+          activate-environment: true
+          enable-cache: true
+          cache-dependency-glob: .hermes-agent/pyproject.toml
+      - name: Install Hermes dependencies
+        run: uv pip install -r .hermes-agent/pyproject.toml pytest pyyaml 'agent-client-protocol>=0.9,<0.10'
+      - name: Integration tests (real Hermes kanban kernel)
+        env:
+          HERMES_AGENT_ROOT: ${{ github.workspace }}/.hermes-agent
+        run: python -m pytest -q

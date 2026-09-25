@@ -1,0 +1,17 @@
+# systemd user unit: cp to ~/.config/systemd/user/, then
+#   systemctl --user enable --now hermes-worker-runtime
+# Keep it running after logout with: loginctl enable-linger $USER
+[Unit]
+Description=Hermes Worker Runtime (external wr:* Kanban lanes)
+After=network-online.target
+
+[Service]
+ExecStart=%h/.hermes/hermes-agent/venv/bin/hermes worker-runtime run
+Restart=on-failure
+RestartSec=5
+# Supervisors are detached and must survive daemon restarts.
+KillMode=process
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
+
+[Install]
+WantedBy=default.target
