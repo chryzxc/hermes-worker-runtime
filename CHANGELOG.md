@@ -6,6 +6,10 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- README: install with `hermes plugins install chryzxc/hermes-worker-runtime`, and
+  document updating, pinning and a development checkout. Add a Contributing section.
+
 ## [0.1.0] - 2026-09-25
 
 First release.

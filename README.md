@@ -31,6 +31,7 @@ Assign a card to a lane such as `wr:codex` or `wr:tests`. The runtime claims it,
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
 - [Roadmap](#roadmap)
+- [Contributing](#contributing)
 - [License](#license)
 
 ## Why
@@ -102,13 +103,11 @@ Design notes, failure-mode tables and the exact Hermes surfaces used are in
 the agent CLI, plus `npx` for the Codex and Claude presets.
 
 ```bash
-# 1. Install the plugin
-git clone https://github.com/chryzxc/hermes-worker-runtime ~/Projects/hermes-worker-runtime
-ln -sfn ~/Projects/hermes-worker-runtime ~/.hermes/plugins/worker-runtime
-hermes plugins enable worker-runtime     # installs PyYAML + agent-client-protocol if missing
+# 1. Install the plugin (also installs PyYAML + agent-client-protocol if missing)
+hermes plugins install chryzxc/hermes-worker-runtime --enable
 
 # 2. Configure lanes
-cp ~/Projects/hermes-worker-runtime/examples/worker-runtime.yaml ~/.hermes/worker-runtime.yaml
+cp ~/.hermes/plugins/worker-runtime/examples/worker-runtime.yaml ~/.hermes/worker-runtime.yaml
 $EDITOR ~/.hermes/worker-runtime.yaml
 
 # 3. Check the setup
@@ -146,6 +145,18 @@ lane claude       wr:claude        adapter=acp      concurrency=1 OK
 | `hermes worker-runtime run` | Runs the daemon in the foreground (one per `HERMES_HOME`, enforced by lock) |
 
 Each command is also available as `python -m hermes_worker_runtime <command>`.
+
+### Updating and pinning
+
+```bash
+hermes plugins update worker-runtime                        # pull the latest main
+hermes plugins install chryzxc/hermes-worker-runtime --force \
+  --ref <commit-sha>                                        # pin an exact commit
+```
+
+Release commits are listed on the [releases page](https://github.com/chryzxc/hermes-worker-runtime/releases).
+For a hackable checkout, clone the repo and symlink it into `~/.hermes/plugins/worker-runtime`
+instead (see [Development](#development)).
 
 ## Configuration
 
@@ -359,6 +370,10 @@ through Hermes' retry budget. Upgrading Hermes restores `pid-tracked` mode.
 ```bash
 git clone https://github.com/chryzxc/hermes-worker-runtime && cd hermes-worker-runtime
 
+# Use the checkout as your installed plugin (edits take effect on the next run)
+ln -sfn "$PWD" ~/.hermes/plugins/worker-runtime
+hermes plugins enable worker-runtime
+
 # Unit tests only (no Hermes needed)
 HERMES_AGENT_ROOT=/nonexistent uv run --no-project --with pytest --with pyyaml \
   --with 'agent-client-protocol>=0.9,<0.10' python -m pytest
@@ -396,6 +411,12 @@ See [CHANGELOG.md](CHANGELOG.md) for release history.
 - [ ] Wake on `on_kanban_dispatch_tick` instead of polling
 - [ ] Upstream a public `record_worker_pid()` API to Hermes
 - [ ] Remote and container lanes
+
+## Contributing
+
+Issues and pull requests are welcome. Before opening a PR, run the full test suite
+(see [Development](#development)); CI must pass on both Ubuntu and macOS. Report
+security issues privately, as described in [SECURITY.md](SECURITY.md).
 
 ## License
 
