@@ -7,6 +7,8 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- Hermes 0.21.5 refused to enable the plugin: its dependency resolver merged our `pytest<9`
+  dev pin with Hermes' `pytest==9.1.1`. The dev pin is now `pytest>=8`.
 - ACP lanes: a crashed agent now fails the run within about a second. Previously the run
   waited for the lane timeout, because the ACP connection never rejects in-flight requests
   when the agent's output closes.

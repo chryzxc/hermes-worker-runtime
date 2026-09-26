@@ -43,7 +43,7 @@ hermes-worker-runtime = "hermes_worker_runtime.cli:main"
 
 [dependency-groups]
 dev = [
-  "pytest>=8,<9",
+  "pytest>=8",
 ]
 
 [tool.hatch.build.targets.wheel]
