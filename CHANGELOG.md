@@ -7,6 +7,12 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Fixed
+- `codex` preset now launches `@agentclientprotocol/codex-acp@1.13.1`. The old
+  `@zed-industries/codex-acp@0.16.0` is no longer updated and can't parse the current Codex
+  models list, so real Codex runs failed.
+- ACP errors were misreported as authentication failures when earlier agent stderr (MCP
+  OAuth warnings, dumped model catalogs) matched the auth heuristic. Classification now uses
+  the error and the agent's final stderr line.
 - Hermes 0.21.5 refused to enable the plugin: its dependency resolver merged our `pytest<9`
   dev pin with Hermes' `pytest==9.1.1`. The dev pin is now `pytest>=8`.
 - ACP lanes: a crashed agent now fails the run within about a second. Previously the run

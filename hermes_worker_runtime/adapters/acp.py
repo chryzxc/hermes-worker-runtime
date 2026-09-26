@@ -20,7 +20,7 @@ from .base import LaunchContext, WorkerAdapter
 
 # Pinned so adapter upgrades are deliberate. Version drift is contained here.
 PRESETS: dict[str, tuple[str, ...]] = {
-    "codex": ("npx", "-y", "@zed-industries/codex-acp@0.16.0"),
+    "codex": ("npx", "-y", "@agentclientprotocol/codex-acp@1.13.1"),
     "claude": ("npx", "-y", "@agentclientprotocol/claude-agent-acp@0.81.2"),
     "opencode": ("opencode", "acp"),
 }
@@ -159,7 +159,11 @@ class AcpAdapter(WorkerAdapter):
         if self._error is not None:
             err = f"{type(self._error).__name__}: {self._error}"
             code = getattr(self._error, "code", None)
-            blob = f"{err}\n{getattr(self._error, 'data', '')}\n{stderr}"
+            last = next((l for l in reversed(self._stderr_tail) if l.strip()), "")
+            # Only the error and the agent's final stderr line: earlier stderr is
+            # noise (MCP servers wanting OAuth, dumped model catalogs) that would
+            # otherwise match the auth / rate-limit heuristics.
+            blob = f"{err}\n{getattr(self._error, 'data', '')}\n{last}"
             meta["error"] = err[:2000]
             if code == _AUTH_REQUIRED or looks_auth_failure(blob):
                 return WorkerResult(Status.UNAVAILABLE, f"agent authentication failed: {err}", meta)
@@ -167,7 +171,6 @@ class AcpAdapter(WorkerAdapter):
                 return WorkerResult(Status.RATE_LIMITED, f"agent rate-limited: {err}", meta)
             if isinstance(self._error, FileNotFoundError):
                 return WorkerResult(Status.UNAVAILABLE, f"agent could not start: {err}", meta)
-            last = next((l for l in reversed(self._stderr_tail) if l.strip()), "")
             return WorkerResult(Status.FAILED, f"agent error: {err}" + (
                 f". Last stderr: {last[:500]}" if last else ""), meta)
 

@@ -235,7 +235,7 @@ Every worker also receives `WR_TASK_ID`, `WR_RUN_ID`, `WR_WORKSPACE` and `WR_LAN
 
 | Preset | Launches | Authentication |
 |---|---|---|
-| `codex` | `npx -y @zed-industries/codex-acp@0.16.0` | `codex login`, or `OPENAI_API_KEY` in `env.pass` |
+| `codex` | `npx -y @agentclientprotocol/codex-acp@1.13.1` | `codex login`, or `OPENAI_API_KEY` in `env.pass` |
 | `claude` | `npx -y @agentclientprotocol/claude-agent-acp@0.81.2` | Claude Code login, or `ANTHROPIC_API_KEY` in `env.pass` |
 | `opencode` | `opencode acp` | OpenCode's own config |
 | custom | `agent_command: [...]` | Up to the agent |
