@@ -23,6 +23,7 @@ Assign a card to a lane such as `wr:codex` or `wr:tests`. The runtime claims it,
 - [Features](#features)
 - [How it works](#how-it-works)
 - [Quickstart](#quickstart)
+- [Set up with an AI agent](#set-up-with-an-ai-agent)
 - [Configuration](#configuration)
 - [Agents](#agents)
 - [Outcomes](#outcomes)
@@ -127,6 +128,8 @@ hermes kanban create "Fix the flaky login test" --assignee wr:codex
 hermes kanban create "Run the full test suite"  --assignee wr:tests
 ```
 
+Prefer to let an agent do it? See [Set up with an AI agent](#set-up-with-an-ai-agent).
+
 `doctor` output looks like this:
 
 ```
@@ -160,6 +163,69 @@ hermes plugins install chryzxc/hermes-worker-runtime --force \
 Release commits are listed on the [releases page](https://github.com/chryzxc/hermes-worker-runtime/releases).
 For a hackable checkout, clone the repo and symlink it into `~/.hermes/plugins/worker-runtime`
 instead (see [Development](#development)).
+
+## Set up with an AI agent
+
+You can let Hermes (or any coding agent with a shell) do the setup. Paste this prompt:
+
+> Install and set up the Hermes Worker Runtime plugin by following the "Agent setup steps"
+> in https://github.com/chryzxc/hermes-worker-runtime/blob/main/README.md. Ask me before any
+> step that says to ask.
+
+### Agent setup steps
+
+These steps are written for an agent. Run them in order and stop at the first check that fails.
+
+1. **Check the host.** Run `hermes --version` and `hermes kanban boards list`. Hermes must be
+   at least 0.21.4, and the Kanban board must work. Note the output of `command -v hermes`,
+   and for Codex or Claude lanes `command -v npx`. You need both paths in step 6.
+2. **Install and enable the plugin.**
+   ```bash
+   hermes plugins install chryzxc/hermes-worker-runtime --enable
+   hermes plugins list | grep worker-runtime        # must say "enabled"
+   ```
+   If Hermes reports a dependency conflict, report it to the user as an issue on this repo.
+   Don't edit Hermes' own dependency pins.
+3. **Ask the user**:
+   - Which lanes to enable: `codex`, `claude`, `opencode`, and/or command lanes such as
+     `tests`.
+   - Which boards the runtime may claim from (`all`, or a list of board slugs).
+   - Whether agents may approve their own tool calls (`permission_policy: allow`). The
+     default is `deny`, and an agent that can't run tools can't edit files. Don't choose
+     `allow` for the user.
+4. **Write the config.** Start from
+   `~/.hermes/plugins/worker-runtime/examples/worker-runtime.yaml` and keep only the lanes the
+   user chose. Write it to `$HERMES_HOME/worker-runtime.yaml` (default
+   `~/.hermes/worker-runtime.yaml`). If a file already exists there, show it to the user and
+   ask before replacing it. For a `command` lane, use an argv list (never a shell string).
+   Commands run in the card's workspace, so cards for it need
+   `--workspace dir:<project path>` (or `worktree:<repo path>`).
+5. **Verify.** Run `hermes worker-runtime doctor`.
+   - It must exit 0, and every lane must say `OK`.
+   - In `pid-tracked` mode, `dispatcher` must not say `NOT RUNNING`; if it does, start the
+     gateway (`hermes gateway start`, or `hermes gateway run` in the foreground).
+   - An agent lane reporting `UNAVAILABLE` usually means its CLI isn't logged in (`codex login`,
+     `claude`), or `npx` isn't on `PATH`.
+6. **Start the daemon.** Ask the user whether to run it now in the foreground
+   (`hermes worker-runtime run`) or to install it as a service that starts at login.
+   - For a service, follow [Running in production](#running-in-production).
+   - Use the `hermes` path from step 1, not a path inside a Hermes venv.
+   - Put the `npx` directory from step 1 on the service's `PATH`.
+   - Only one daemon may run per `HERMES_HOME`; a second one exits with a lock error.
+7. **Smoke-test one lane, then report.** Ask the user before running one small card on an
+   agent lane, because it uses their agent quota. Then create it:
+   ```bash
+   hermes kanban create "Create hello.txt" --assignee wr:codex \
+     --body "Create a file named hello.txt containing exactly: hi. Change nothing else."
+   hermes kanban show <task-id>        # ready → running → review (or done)
+   ```
+   If it ends up `blocked`, read `hermes kanban log <task-id>` and see
+   [Troubleshooting](#troubleshooting). When it passes, give the user a short report:
+   - the plugin version;
+   - the lanes and boards configured;
+   - how the daemon runs (foreground or service);
+   - the smoke-test result;
+   - how to assign work: `--assignee wr:<lane>`.
 
 ## Configuration
 

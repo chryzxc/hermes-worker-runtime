@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-26
+
 ### Fixed
 - `codex` preset now launches `@agentclientprotocol/codex-acp@1.13.1`. The old
   `@zed-industries/codex-acp@0.16.0` is no longer updated and can't parse the current Codex
@@ -29,6 +31,10 @@ All notable changes to this project are documented here. The format follows
   failed runs in `pid-tracked` mode.
 
 ### Changed
+- README: new "Set up with an AI agent" section, with a prompt to paste and step-by-step
+  instructions an agent can follow.
+- Service examples (launchd, systemd) now launch the `hermes` launcher instead of a venv
+  binary, which Hermes relocates on update, and say that `npx` must be on `PATH`.
 - README: document the dispatcher requirement; add a troubleshooting entry for cards
   stuck in `running`.
 - README: install with `hermes plugins install chryzxc/hermes-worker-runtime`, and
@@ -65,5 +71,6 @@ First release.
 - Test suite against the real Hermes kanban kernel, including a scriptable fake
   ACP agent. CI on Ubuntu and macOS against a pinned Hermes commit.
 
-[Unreleased]: https://github.com/chryzxc/hermes-worker-runtime/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/chryzxc/hermes-worker-runtime/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/chryzxc/hermes-worker-runtime/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/chryzxc/hermes-worker-runtime/releases/tag/v0.1.0
