@@ -6,7 +6,23 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+- ACP lanes: a crashed agent now fails the run within about a second. Previously the run
+  waited for the lane timeout, because the ACP connection never rejects in-flight requests
+  when the agent's output closes.
+- ACP lanes: on `hermes kanban reclaim` the supervisor now stops the agent and exits within
+  Hermes' SIGTERM-to-SIGKILL window. Previously it was SIGKILLed before writing its exit
+  trailer.
+- Daemon logs now go to stderr when run as `hermes worker-runtime run`. Previously Hermes'
+  logging setup redirected them into Hermes' `agent.log`, leaving service log files empty.
+
+### Added
+- `doctor` reports whether the Hermes Kanban dispatcher is running. Its crash sweep books
+  failed runs in `pid-tracked` mode.
+
 ### Changed
+- README: document the dispatcher requirement; add a troubleshooting entry for cards
+  stuck in `running`.
 - README: install with `hermes plugins install chryzxc/hermes-worker-runtime`, and
   document updating, pinning and a development checkout. Add a Contributing section.
 

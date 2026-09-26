@@ -47,3 +47,21 @@ def test_plugin_registers_cli_command():
     ctx = Ctx()
     pkg.register(ctx)
     assert ctx.calls[0]["name"] == "worker-runtime"
+
+
+def test_daemon_logs_reach_stderr_when_host_configured_logging(hermes_home, capsys):
+    # Hermes configures the root logger before running plugin commands, which
+    # makes logging.basicConfig a no-op; daemon logs must still reach stderr.
+    import logging
+    root = logging.getLogger()
+    host = logging.NullHandler()
+    root.addHandler(host)
+    try:
+        write(hermes_home, "lanes:\n  t:\n    assignee: wr:t\n    adapter: command\n"
+                           "    command: [\"true\"]\n")
+        cli.main(["lanes"])
+        cli.main(["lanes"])  # handler is installed once
+        logging.getLogger("hermes_worker_runtime").info("hello-daemon-log")
+        assert capsys.readouterr().err.count("hello-daemon-log") == 1
+    finally:
+        root.removeHandler(host)

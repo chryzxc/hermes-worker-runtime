@@ -23,8 +23,33 @@ def setup_parser(parser: argparse.ArgumentParser) -> None:
     sub.add_parser("doctor", help="check config, Hermes compatibility and executor availability")
 
 
+class _StderrHandler(logging.StreamHandler):
+    """Writes to whatever ``sys.stderr`` is at emit time."""
+
+    @property
+    def stream(self):
+        return sys.stderr
+
+    @stream.setter
+    def stream(self, _value):
+        pass
+
+
+def _setup_logging() -> None:
+    # Our own stderr handler: under ``hermes worker-runtime`` the root logger is
+    # already configured by Hermes (basicConfig would be a no-op and daemon logs
+    # would land in Hermes' agent.log instead of the service's log file).
+    log = logging.getLogger("hermes_worker_runtime")
+    if not any(isinstance(h, _StderrHandler) for h in log.handlers):
+        handler = _StderrHandler()
+        handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+        log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
+
+
 def handle(args: argparse.Namespace) -> int:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    _setup_logging()
     cmd = getattr(args, "wr_command", None) or "doctor"
     try:
         config = load_config(args.config)
@@ -68,6 +93,13 @@ def _doctor(config) -> int:
     if info["mode"] != "pid-tracked":
         print("  ! claim-only: failures are recorded as blocks and dead supervisors are "
               "recovered by claim TTL expiry")
+    else:
+        running, detail = h.dispatcher_presence()
+        print(f"dispatcher    : {(detail or 'running') if running else 'NOT RUNNING'}")
+        if not running:
+            print("  ! failed runs are booked by the Hermes dispatcher's crash sweep; without "
+                  "it they stay 'running'. Start the gateway with kanban.dispatch_in_gateway "
+                  "enabled (the default), or run `hermes kanban dispatch` periodically.")
     print(f"boards        : {', '.join(config.boards) if config.boards else 'all'}")
     worst = 0
     for assignee, lane in config.lanes.items():

@@ -27,6 +27,7 @@ PRESETS: dict[str, tuple[str, ...]] = {
 
 _AUTH_REQUIRED = -32000
 _STDIO_LIMIT = 16 * 1024 * 1024
+_EXIT_DRAIN_SECONDS = 1.0
 
 
 def agent_argv(lane) -> tuple[str, ...]:
@@ -135,16 +136,17 @@ class AcpAdapter(WorkerAdapter):
         grace = self.lane.kill_grace_seconds if grace is None else grace
         self._cancelled = reason
         loop, conn, sid = self._loop, self._conn, self._session_id
+        polite = min(1.0, grace / 3)  # the whole budget must fit Hermes' SIGTERM->SIGKILL window
         if loop and conn and sid and loop.is_running():
             try:  # polite first: give the agent a chance to stop its own tools
                 asyncio.run_coroutine_threadsafe(conn.cancel(session_id=sid), loop).result(
-                    timeout=min(3.0, grace))
+                    timeout=polite)
             except Exception:
                 pass
         if self._proc is not None:
-            procutil.terminate_group(self._proc.pid, grace_seconds=grace)
+            procutil.terminate_group(self._proc.pid, grace_seconds=max(0.5, grace - polite))
         if self._thread is not None:
-            self._thread.join(timeout=grace + 10)
+            self._thread.join(timeout=_EXIT_DRAIN_SECONDS + 2)
 
     def collect_result(self) -> WorkerResult:
         text = "".join(self._message).strip()
@@ -165,7 +167,9 @@ class AcpAdapter(WorkerAdapter):
                 return WorkerResult(Status.RATE_LIMITED, f"agent rate-limited: {err}", meta)
             if isinstance(self._error, FileNotFoundError):
                 return WorkerResult(Status.UNAVAILABLE, f"agent could not start: {err}", meta)
-            return WorkerResult(Status.FAILED, f"agent error: {err}", meta)
+            last = next((l for l in reversed(self._stderr_tail) if l.strip()), "")
+            return WorkerResult(Status.FAILED, f"agent error: {err}" + (
+                f". Last stderr: {last[:500]}" if last else ""), meta)
 
         parsed = parse_agent_result(text)
         if self._stop_reason == "refusal":
@@ -202,20 +206,22 @@ class AcpAdapter(WorkerAdapter):
             ctx.log(f"[acp] started {' '.join(argv)} pid={self._proc.pid}")
             stderr_task = asyncio.create_task(self._pump_stderr())
             self._conn = ClientSideConnection(_Client(self), self._proc.stdin, self._proc.stdout)
-            init = await self._conn.initialize(
+            init = await self._request(self._conn.initialize(
                 protocol_version=PROTOCOL_VERSION,
                 client_capabilities=ClientCapabilities(
                     fs=FileSystemCapabilities(read_text_file=False, write_text_file=False),
                     terminal=False),
                 client_info=Implementation(name="hermes-worker-runtime", version=__version__),
-            )
+            ))
             agent_info = getattr(init, "agent_info", None)
             if agent_info is not None:
                 ctx.log(f"[acp] agent {getattr(agent_info, 'name', '?')} "
                         f"{getattr(agent_info, 'version', '')}")
-            session = await self._conn.new_session(cwd=str(ctx.workspace), mcp_servers=[])
+            session = await self._request(
+                self._conn.new_session(cwd=str(ctx.workspace), mcp_servers=[]))
             self._session_id = session.session_id
-            resp = await self._conn.prompt(session_id=self._session_id, prompt=[text_block(prompt)])
+            resp = await self._request(
+                self._conn.prompt(session_id=self._session_id, prompt=[text_block(prompt)]))
             self._stop_reason = getattr(resp, "stop_reason", None)
             ctx.log(f"[acp] stop_reason={self._stop_reason}")
             text = "".join(self._message).strip()
@@ -239,6 +245,27 @@ class AcpAdapter(WorkerAdapter):
                     procutil.terminate_group(self._proc.pid, grace_seconds=self.lane.kill_grace_seconds)
             if stderr_task is not None:
                 stderr_task.cancel()
+
+    async def _request(self, coro):
+        """Await an ACP request, failing fast if the agent process exits first.
+
+        The ACP connection does not reject in-flight requests when the agent's
+        stdout reaches EOF, so a crashed agent would otherwise hang the run until
+        the lane timeout."""
+        request = asyncio.ensure_future(coro)
+        exited = asyncio.ensure_future(self._proc.wait())
+        try:
+            await asyncio.wait({request, exited}, return_when=asyncio.FIRST_COMPLETED)
+            if not request.done():
+                # A response written just before exit may still be in the pipe.
+                await asyncio.wait({request}, timeout=_EXIT_DRAIN_SECONDS)
+            if request.done():
+                return request.result()
+            request.cancel()
+            raise ConnectionError(f"agent exited with code {self._proc.returncode} "
+                                  "before answering")
+        finally:
+            exited.cancel()
 
     async def _pump_stderr(self) -> None:
         assert self._proc and self._proc.stderr

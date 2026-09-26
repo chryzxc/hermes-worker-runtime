@@ -4,6 +4,7 @@ result      stream a message ending with a hermes-result block (status from FAKE
 prose       stream plain text, no structured block
 permission  ask for permission, then report the chosen option as the result summary
 hang        never answer the prompt (until cancelled / killed)
+crash       exit mid-prompt without answering (agent process dies)
 auth        fail the prompt with ACP auth_required (-32000)
 refusal     stop with stop_reason=refusal
 env         report the names of the environment variables it received
@@ -55,6 +56,9 @@ class FakeAgent:
         sid = session_id
         if MODE == "hang":
             await asyncio.sleep(3600)
+        if MODE == "crash":
+            print("fake agent: simulated crash", file=sys.stderr, flush=True)
+            os._exit(3)
         if MODE == "auth":
             raise RequestError(-32000, "Authentication required")
         if MODE == "refusal":

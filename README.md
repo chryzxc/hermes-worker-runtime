@@ -99,8 +99,11 @@ Design notes, failure-mode tables and the exact Hermes surfaces used are in
 
 ## Quickstart
 
-**Requirements:** Hermes Agent ≥ 0.21.4 on macOS or Linux. For agent lanes you also need
-the agent CLI, plus `npx` for the Codex and Claude presets.
+**Requirements:** Hermes Agent ≥ 0.21.4 on macOS or Linux, with its Kanban dispatcher
+running (the gateway runs it by default: `kanban.dispatch_in_gateway: true`). The runtime
+claims cards itself, but failed runs are booked, retried and eventually blocked by the
+dispatcher's crash sweep, just like Hermes' own workers. For agent lanes you also need the
+agent CLI, plus `npx` for the Codex and Claude presets.
 
 ```bash
 # 1. Install the plugin (also installs PyYAML + agent-client-protocol if missing)
@@ -301,6 +304,8 @@ systemctl --user enable --now hermes-worker-runtime
 
 **Operational notes**
 
+- Keep the Hermes gateway (or another Kanban dispatcher) running. Without it, a failed run
+  stays `running` because nothing books the supervisor's exit code. `doctor` warns about this.
 - Restarting the daemon is safe: supervisors run in their own sessions and keep going.
 - `hermes kanban reclaim <id>` works as usual. The supervisor receives SIGTERM, kills the
   worker's process tree within 3 s, and exits without writing to the card.
@@ -335,6 +340,17 @@ Report vulnerabilities as described in [SECURITY.md](SECURITY.md).
   are lowercase.
 - Is the lane at its `concurrency` limit? `tick` lists capped cards.
 - Is the card on a board you configured under `boards`?
+
+</details>
+
+<details>
+<summary><b>A card stays in <code>running</code> after its worker finished</b></summary>
+
+In `pid-tracked` mode a failed run ends with the supervisor exiting non-zero, and the
+Hermes dispatcher's crash sweep moves the card on: it retries it, or blocks it once
+`kanban.failure_limit` is reached. Check that `doctor` shows the dispatcher as running;
+the sweep runs on the gateway's `kanban.dispatch_interval_seconds` tick. The card's
+worker log (`hermes kanban log <id>`) ends with `[kanban-worker-exit] rc=<code>`.
 
 </details>
 

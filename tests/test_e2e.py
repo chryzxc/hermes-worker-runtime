@@ -288,6 +288,32 @@ def test_acp_timeout_kills_agent(board):
     assert "timed_out" in log_text(tid)
 
 
+def test_acp_agent_crash_fails_fast(board):
+    # The ACP connection never rejects in-flight requests on EOF; the adapter must
+    # notice the agent exiting instead of waiting for the lane timeout.
+    sched = Scheduler(config(c=acp("wr:fake", "crash", timeout_seconds=600, on_failure="block")))
+    tid = make_task(board, assignee="wr:fake")
+    started = time.monotonic()
+    sched.tick()
+    assert settle(board, tid, timeout=20) == "blocked"
+    assert time.monotonic() - started < 20
+    assert "exited with code 3" in log_text(tid)
+    assert any("simulated crash" in str(e.payload) for e in h.kb.list_events(board, tid))
+
+
+def test_hermes_reclaim_of_acp_run_exits_before_sigkill(board):
+    sched = Scheduler(config(c=acp("wr:fake", "hang")))
+    tid = make_task(board, assignee="wr:fake")
+    sched.tick()
+    wait_for(lambda: "[acp] started" in log_text(tid), 15)
+    assert h.kb.reclaim_task(board, tid, reason="operator test")   # SIGTERM, SIGKILL after ~5 s
+    wait_supervisor_exit(tid, 15)
+    assert trailer(tid).endswith("rc=143")                          # we exited on our own
+    reclaimed = [e for e in h.kb.list_events(board, tid) if e.kind == "reclaimed"][-1]
+    assert (reclaimed.payload or {}).get("sigkill") is False
+    assert list(paths.runs_dir().glob("*.json")) == []
+
+
 def test_acp_missing_executable_is_unavailable(board):
     sched = Scheduler(config(c={"assignee": "wr:fake", "adapter": "acp",
                                 "agent_command": ["definitely-not-an-agent-xyz"]}))

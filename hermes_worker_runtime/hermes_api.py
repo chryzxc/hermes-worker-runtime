@@ -134,6 +134,17 @@ def running_counts(conn, assignees: Iterable[str]) -> dict[str, int]:
     return {a: len(kb.list_tasks(conn, status="running", assignee=a)) for a in assignees}
 
 
+def dispatcher_presence() -> tuple[bool, str]:
+    """``(running, detail)`` for the Hermes dispatcher, whose crash sweep books
+    supervisor exit codes in pid-tracked mode. Fails open like Hermes' own probe."""
+    try:
+        from hermes_cli.kanban import _check_dispatcher_presence
+        home = os.environ.get("HERMES_HOME") or str(Path.home() / ".hermes")
+        return _check_dispatcher_presence(Path(home).expanduser())
+    except Exception:
+        return (True, "")
+
+
 def describe() -> dict[str, Any]:
     return {
         "hermes_kanban_db": getattr(kb, "__file__", "?"),
